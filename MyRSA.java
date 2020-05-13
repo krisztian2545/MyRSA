@@ -3,34 +3,108 @@
 import java.util.Scanner;
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 
 import java.io.*; // remove this
 
 public class MyRSA {
 
-  private BigInteger SK, PK;
+  private final int MIN_NUM_OF_BASES = 3;
 
-  private BigInteger genRandomMRBase(BigInteger n) {
-    BigInteger a;
-    do {
-      a = genRandomBigInt(n.bitLength());
-    } while(a.compareTo(n) == -1); // a < n
+  private BigInteger[] PK = new BigInteger[2];
+  private BigInteger SK;
+  private ArrayList<Integer> bases = new ArrayList<Integer>();
 
-    // ensuring a is positive
-    if(a.remainder(new BigInteger("2")).intValue() == 1) {
-      a.subtract(BigInteger.ONE);
-    }
-
-    return a;
+  private void setBasesForMR(ArrayList<Integer> a) {
+    bases = a;
   }
 
-  // private boolean MRTest3(BigInteger n){
-  //   BigInteger a = genRandomMRBase(n);
+  private int randomIntLessThan(BigInteger limit, boolean makeOdd) {
+    int x;
+    SecureRandom sr = new SecureRandom();
+
+    do {
+      x = sr.nextInt(limit.bitLength());
+      if(makeOdd && (x % 2 == 0))
+        x++;
+    } while( (BigInteger.valueOf(x).compareTo(limit) == 1) || (x < 2) ); // 1 < x < limit
+
+    System.out.println("x = " + x);
+    System.out.println("limit = " + limit.toString());
+
+    return x;
+  }
+
+  // private int generateE(BigInteger fiN) {
+  //   int e;
+  //   SecureRandom sr = new SecureRandom();
   //
-  //   return false;
+  //   do {
+  //     e = sr.nextInt();
+  //     if(e % 2 == 1)
+  //       e++;
+  //   } while( (BigInteger.valueOf(e).compareTo(fiN) == -1) && (e > 1) ); // 1 < e < fi(n)
+  //
+  //   return e;
   // }
 
-  private boolean MRWithBases(BigInteger n, BigInteger[] a) {
+  private BigInteger genRandomBigIntLessThan(BigInteger limit) {
+    BigInteger x;
+    SecureRandom sr = new SecureRandom();
+    do{
+      x =  new BigInteger(limit.bitLength(), sr);
+    } while((x.compareTo(limit) == 1) || (x.compareTo(BigInteger.valueOf(2)) == -1)); // 1 < x < limit
+
+    return x;
+  }
+
+  private BigInteger genRandomBigPrime(int bitLength) {
+    BigInteger x;
+    SecureRandom random = new SecureRandom();
+
+    do {
+      x = new BigInteger(bitLength, random);
+
+      //for performance
+      if(x.remainder(new BigInteger("2")).intValue() == 0)
+        x = x.add(BigInteger.ONE);
+
+    } while( MRTest(x) );
+
+    return x;
+  }
+
+    //this is useless now
+  // private BigInteger genRandomMRBase(BigInteger n) {
+  //   BigInteger a = genRandomBigIntLessThan(n);
+  //   // do {
+  //   //   a = genRandomBigInt(n.bitLength());
+  //   // } while((a.compareTo(n) == -1) && (a.compareTo(BigInteger.ZERO) == 1)); // 0 < a < n
+  //
+  //   // ensuring a is (idk what this supposed to be)
+  //   // if(a.remainder(new BigInteger("2")).intValue() == 1) {
+  //   //   a.subtract(BigInteger.ONE);
+  //   // }
+  //
+  //   return a;
+  // }
+
+  private boolean MRTest(BigInteger n){
+    //BigInteger a = genRandomMRBase(n);
+
+    if(n.compareTo(BigInteger.ZERO) == -1){
+      System.out.println("MR test number can't be negative");
+      return true;
+    }
+
+    for(int i = MIN_NUM_OF_BASES - bases.size(); i > 0; i--) {
+      bases.add(randomIntLessThan(n, false));
+    }
+
+    return MRWithBases(n, bases);
+  }
+
+  private boolean MRWithBases(BigInteger n, ArrayList<Integer> a) {
     // calculate S and d
     int S = 0;
     BigInteger d = n.subtract(BigInteger.ONE);
@@ -42,19 +116,21 @@ public class MyRSA {
     BigInteger temp;
     BigInteger nMinusOne = n.subtract(BigInteger.ONE);
 
-    loop: for(BigInteger base : a) {
-      temp = FME(base, d, n);
+    loop: for(Integer base : a) {
+      System.out.println("MR with base: " + base);
+      temp = FME(BigInteger.valueOf(base), d, n);
 
       if( (temp.compareTo(BigInteger.ONE) == 0) || (temp.compareTo(nMinusOne) == 0) ) {
         continue;
+        //return false; // probable prime
       }
 
       for(int r = 1; r < S; r++) {
-        temp = FME(base, d.multiply(BigInteger.valueOf(2).pow(r)), n);
+        temp = FME(BigInteger.valueOf(base), d.multiply(BigInteger.valueOf(2).pow(r)), n);
 
         if(temp.compareTo(nMinusOne) == 0)
           continue loop;
-
+          //return false; // probable prime
       }
 
       return true; // composite
@@ -63,20 +139,6 @@ public class MyRSA {
     return false; // prime, maybe
   }
 
-  private BigInteger genRandomBigInt(int bitLength) {
-    return new BigInteger(bitLength, new SecureRandom());
-  }
-  //
-  // private BigInteger genRandomBigPrime(int bitLength) {
-  //   BigInteger temp = genRandomBigInt(bitLength);
-  //   SecureRandom random = new SecureRandom();
-  //
-  //   do {
-  //     temp = new BigInteger(bitLength, random);
-  //   } while( MRTest(temp) );
-  //
-  //   return temp;
-  // }
 
   private BigInteger FME(BigInteger A, BigInteger B, BigInteger C) {
     String binaryB = B.toString(2);
@@ -95,15 +157,25 @@ public class MyRSA {
     return temp.mod(C);
   }
 
+  //EEA
+
   private void keyGen(int bitLength) {
     // generate 2 random big prime ints
-    BigInteger p = genRandomBigInt(bitLength);
-    BigInteger q = genRandomBigInt(bitLength);
+    BigInteger p = genRandomBigPrime(bitLength);
+    BigInteger q;
+    do {
+      q = genRandomBigPrime(bitLength);
+    } while (p.compareTo(q) == 0);
 
-    // prime test
+    // generate e
 
+    // calculate d
 
   }
+
+  // ENC
+
+  // DEC
 
   public static void main(String[] args) {
     // test
@@ -111,7 +183,7 @@ public class MyRSA {
     BigInteger a = BigInteger.valueOf(2).pow(35);
     BigInteger b = new BigInteger("561");
 
-    System.out.println(asd.genRandomBigInt(3));
+    //System.out.println(asd.genRandomBigInt(2));
 
     // generate key
 
@@ -125,8 +197,15 @@ public class MyRSA {
 
 
     System.out.println("c = " + c.toString(2));
-    String text=System.console().readLine(); 
+    //String text=System.console().readLine();
     System.out.println( "mod: " + asd.FME( BigInteger.valueOf(7), BigInteger.valueOf(256), BigInteger.valueOf(13) ) );
+
+    ArrayList<Integer> al = new ArrayList<Integer>();
+    al.add(2);
+    al.add(3);
+    al.add(4);
+    //asd.setBasesForMR(al);
+    System.out.println(asd.MRTest(new BigInteger("7")));
 
     // encryption / decryption
 

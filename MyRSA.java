@@ -19,6 +19,8 @@ public class MyRSA {
   private BigInteger SK;
   private ArrayList<BigInteger> bases = new ArrayList<BigInteger>();
 
+  private static Logger l = new Logger();
+
   private void setBasesForMR(ArrayList<BigInteger> a) {
     clearBases();
     bases = a;
@@ -121,7 +123,8 @@ public class MyRSA {
       if(x.remainder(new BigInteger("2")).intValue() == 0)
         x = x.add(BigInteger.ONE);
 
-      System.out.println("test rpime: " + x.toString());
+      //System.out.println("test rpime: " + x.toString());
+      l.log("test prime: " + x.toString());
     } while( MRTest(x) );
 
     return x;
@@ -143,13 +146,24 @@ public class MyRSA {
   // }
 
   private boolean MRTest(BigInteger n){
-    //BigInteger a = genRandomMRBase(n);
 
     if(n.compareTo(BigInteger.ZERO) == -1){
       System.out.println("MR test number can't be negative");
       return true;
     }
 
+    // remove if a < n
+    int k = 0;
+    BigInteger bi;
+    while(k != bases.size()) {
+      bi = bases.get(k);
+      if(bi.compareTo(n) != -1)
+        bases.remove(bi);
+      else
+        k++;
+    };
+
+    // generate bases
     for(int i = MIN_NUM_OF_BASES - bases.size(); i > 0; i--) {
       BigInteger x;
       do {
@@ -174,7 +188,8 @@ public class MyRSA {
     BigInteger nMinusOne = n.subtract(BigInteger.ONE);
 
     loop: for(BigInteger base : a) {
-      System.out.println("MR with base: " + base.toString());
+      //System.out.println("MR with base: " + base.toString());
+      l.log("MR with base: " + base.toString());
       temp = FME(base, d, n);
 
       if( (temp.compareTo(BigInteger.ONE) == 0) || (temp.compareTo(nMinusOne) == 0) ) {
@@ -189,10 +204,10 @@ public class MyRSA {
           continue loop;
           //return false; // probable prime
       }
-      System.out.println("comp");
+      l.log("composite");
       return true; // composite
     }
-    System.out.println("prime?");
+    l.log("prime?");
     return false; // prime, maybe
   }
 
@@ -249,12 +264,12 @@ public class MyRSA {
       q = genRandomBigPrime(bitLength);
     } while (p.compareTo(q) == 0);
 
-    System.out.println("p = " + p.toString());
-    System.out.println("q = " + q.toString());
+    l.log("p = " + p.toString());
+    l.log("q = " + q.toString());
 
     BigInteger n = p.multiply(q);
     BigInteger fiN = p.subtract(BigInteger.ONE).multiply( q.subtract(BigInteger.ONE) );
-    System.out.println("fiN = " + fiN.toString());
+    l.log("fiN = " + fiN.toString());
 
     // generate e
     HashMap<String, BigInteger> hm;
@@ -262,7 +277,7 @@ public class MyRSA {
     do {
       //e = BigInteger.valueOf( randomIntLessThan(fiN, true) );
       e = genRandomBigIntLessThan(fiN, true);
-      System.out.println("e = " + e.toString());
+      l.log("e = " + e.toString());
       hm = EEA(e, fiN);
     } while(hm.get("lnko").compareTo(BigInteger.ONE) != 0);
 
@@ -273,7 +288,7 @@ public class MyRSA {
     else
       d = hm.get("x");
 
-    System.out.println("d = " + d.toString());
+    l.log("d = " + d.toString());
 
     PK[0] = n;
     PK[1] = e;
@@ -294,7 +309,6 @@ public class MyRSA {
     }
 
     return FME(message, PK[1], PK[0]).toString();
-    //return FME(m, PK[1], PK[0]);
   }
 
   private String forceEncrypt(String m) {
@@ -325,7 +339,8 @@ public class MyRSA {
   // DEC
   private String decrypt(String c) {
     if(c == "-1"){
-      System.out.println("Can't decrypt the message, because there was a problem with the encryption!");
+      //System.out.println("Can't decrypt the message, because there was a problem with the encryption!");
+      l.log("Can't decrypt the message, because there was a problem with the encryption!");
       return "Can't decrypt the message, because there was a problem with the encryption!";
     }
     return new String( FME(new BigInteger(c), SK, PK[0]).toByteArray(), StandardCharsets.UTF_8 );
@@ -346,6 +361,7 @@ public class MyRSA {
     String lastDecrypted = "";
 
     // welcome
+    System.out.println("----------------------------------------");
     System.out.println("Welcome to my RSA encryptor / decryptor.\nType \'list\' to see the commands.\n");
 
     boolean loop = true;
@@ -496,6 +512,19 @@ public class MyRSA {
           System.out.println("X: " + hs.get("x").toString());
           break;
 
+        case "logger":
+          if(command.length != 2) {
+            printGuide();
+            break;
+          }
+          if((command[1].equals("on")) || (command[1].equals("1"))) {
+            l.enable();
+          } else if((command[1].equals("off")) || (command[1].equals("0"))) {
+            l.disable();
+          }
+          System.out.println(l.getEnabled() ? "enabled" : "disabled");
+          break;
+
         case "l":
         case "list":
           printCommands();
@@ -615,7 +644,15 @@ public class MyRSA {
 }
 
 class Logger {
-  private static boolean enabled = true;
+  private static boolean enabled;
+
+  public Logger() {
+    enabled = false;
+  }
+
+  public static boolean getEnabled() {
+    return enabled;
+  }
 
   public static void enable() {
     enabled = true;

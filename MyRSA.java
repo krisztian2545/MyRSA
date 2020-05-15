@@ -13,6 +13,7 @@ public class MyRSA {
 
   private final int MIN_NUM_OF_BASES = 3;
   private final int BITLENGTH_MULTIPLIER = 5;
+  private final int BITLENGTH = 100;
 
   private BigInteger[] PK = new BigInteger[2];
   private BigInteger SK;
@@ -34,6 +35,15 @@ public class MyRSA {
   private void printKeys() {
     System.out.println("PK = (" + PK[0] + ", " + PK[1] + ")");
     System.out.println("SK = (" + SK + ")");
+  }
+
+  private void setPK(String[] keys) {
+    PK[0] = new BigInteger(keys[0]);
+    PK[1] = new BigInteger(keys[1]);
+  }
+
+  private void setSK(String key) {
+    SK = new BigInteger(key);
   }
 
   /*private int randomIntLessThan(BigInteger limit, boolean makeOdd) {
@@ -271,6 +281,10 @@ public class MyRSA {
 
   }
 
+  private void keyGen() {
+    keyGen(BITLENGTH);
+  }
+
   // ENC
   private String encrypt(String m) {
     BigInteger message = new BigInteger(m.getBytes(StandardCharsets.UTF_8));
@@ -319,12 +333,113 @@ public class MyRSA {
   }
 
   public static void main(String[] args) {
-    test();
+    //test();
+
+    MyRSA temp = new MyRSA();
+    MyRSA rsa = new MyRSA();
+    rsa.keyGen();
+
+    String lastEncrypted = "";
+    String lastDecrypted = "";
+
     // welcome
-    System.out.println("");
+    System.out.println("Welcome to my RSA encryptor / decryptor.\nType \'list\' to see the commands.\n");
 
     boolean loop = true;
     do {
+
+      System.out.println();
+      String[] command = scanner.nextLine().trim().split(" ");
+
+      switch(command[0]) {
+        case "encrypt":
+          System.out.println( rsa.encrypt( getRange(command, 1, command.length-1) ) );
+          break;
+
+        case "encrypt2":
+          if(command.length < 4) {
+            printGuide();
+            break;
+          }
+          temp.setPK(command[1], command[2]);
+          System.out.println( temp.encrypt( getRange(command, 3, command.length-3) ) );
+          break;
+
+        case "forceEncrypt":
+          System.out.println( rsa.forceEncrypt(getRange(command, 1, command.length-1)) );
+          break;
+
+        case "encryptLast":
+          if(command.length != 1) {
+            printGuide();
+            break;
+          }
+          System.out.println( rsa.encrypt(lastDecrypted) );
+          break;
+
+        case "decrypt":
+          if(command.length != 2) {
+            printGuide();
+            break;
+          }
+          System.out.println( rsa.decrypt(command[1]) );
+          break;
+
+        case "decrypt2":
+          if(command.length != 4) {
+            printGuide();
+            break;
+          }
+          temp.setPK(command[2], "3");
+          temp.setSK(command[1]);
+          System.out.println(temp.decrypt(command[3]));
+          break;
+
+        case "decryptLast":
+          if(command.length != 1) {
+            printGuide();
+            break;
+          }
+          System.out.println(rsa.decrypt(lastEncrypted));
+          break;
+
+        case "generate":
+          if(command.length == 2) {
+            rsa.keyGen();
+          } else if(command.length == 3){
+            rsa.keyGen(Integer.parseInt(command[2]));
+          } else {
+            printGuide();
+          }
+          break;
+
+        case "PK":
+          if(command.length != 3) {
+            printGuide();
+            break;
+          }
+          rsa.setPK(command[1], command[2]);
+          break;
+
+        case "SK":
+          if(command.length != 2) {
+            printGuide();
+            break;
+          }
+          rsa.setSK(command[1]);
+          break;
+
+        case "list":
+          printCommands();
+          break;
+
+        case "exit":
+          loop = false;
+          break;
+
+        default:
+          printGuide();
+      }
 
     } while(loop);
   }
@@ -390,8 +505,56 @@ public class MyRSA {
   //---------------------------------------------- User Interface -------------------------------
   private static Scanner scanner = new Scanner(System.in);
 
-  private static printGuide() {
-
+  private static void printCommands() {
+    String s = " ----------------------------------------\n";
+    s += "encrypt <message> - encrypts the given message\n";
+    s += "encrypt2 <modulus> <exponent> <message> - encrypts the given message with the given key (the key will be forgotten)\n";
+    s += "forceEncrypt - if the message is bigger than the key, than itt will generate new keys and use them to encrypt the message\n";
+    s += "encryptLast - encrypts the last decrypted message\n";
+    s += "decrypt <encrypted message> - decrypts the message\n";
+    s += "decrypt2 <private key> <modulus> <encrypted message> - decrypts the message with the given key (the key will be forgotten)\n";
+    s += "decryptLast - decrypts the last encrypted message\n";
+    s += "generate keys <bitlength> - generate new keys, the bitlength is optional to set an upper limit when generating primes\n";
+    s += "PK <modulus> <exponent> - (for advanced users) set public key, should be followed by setting the private key\n";
+    s += "SK <private key> - (for advanced users) set private key, first you must to set the public key!!!\n";
+    s += "MR <number> <base> <base> .. - tests the given number with the Miller Rabin test, optionally you can give the bases to work with\n";
+    s += "FME <base> <exponent> <modulus> - Fast Modular Exponentiation\n";
+    s += "EEA <a> <b> - Extended Euclidean Algorithm\n";
+    s += "exit - exit the program\n";
+    s += " -----------------------------------------\n";
+    System.out.println(s);
   }
 
+  private static void printGuide() {
+    System.out.println("You misstyped something. \nType \'list\' to see the commands.\n");
+  }
+
+  private static String getRange(String[] arr, int start, int length) {
+    String out = arr[start];
+    for(int i = 1; i < length; i++)
+      out += " " + arr[start + i];
+
+    return out;
+  }
+
+  // -------------------------------------- just logger class
+
+
+}
+
+class Logger {
+  private static boolean enabled = true;
+
+  public static void enable() {
+    enabled = true;
+  }
+
+  public static void disable() {
+    enabled = false;
+  }
+
+  public static void log(String message) {
+    if(enabled)
+      System.out.println(message);
+  }
 }

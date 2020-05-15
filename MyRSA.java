@@ -37,9 +37,9 @@ public class MyRSA {
     System.out.println("SK = (" + SK + ")");
   }
 
-  private void setPK(String[] keys) {
-    PK[0] = new BigInteger(keys[0]);
-    PK[1] = new BigInteger(keys[1]);
+  private void setPK(String n, String e) {
+    PK[0] = new BigInteger(n);
+    PK[1] = new BigInteger(e);
   }
 
   private void setSK(String key) {
@@ -332,6 +332,9 @@ public class MyRSA {
     //return FME(c, SK, PK[0]);
   }
 
+  // ----------------------------------------------------------------------------------------
+  // -- MAIN --  -- MAIN -- -- MAIN -- -- MAIN -- -- MAIN -- -- MAIN -- -- MAIN -- -- MAIN --
+  // ----------------------------------------------------------------------------------------
   public static void main(String[] args) {
     //test();
 
@@ -352,10 +355,17 @@ public class MyRSA {
       String[] command = scanner.nextLine().trim().split(" ");
 
       switch(command[0]) {
+        case "enc":
         case "encrypt":
-          System.out.println( rsa.encrypt( getRange(command, 1, command.length-1) ) );
+          if(command.length == 1) {
+            printGuide();
+            break;
+          }
+          lastEncrypted = rsa.encrypt( getRange(command, 1, command.length-1) );
+          System.out.println( lastEncrypted );
           break;
 
+        case "enc2":
         case "encrypt2":
           if(command.length < 4) {
             printGuide();
@@ -365,26 +375,37 @@ public class MyRSA {
           System.out.println( temp.encrypt( getRange(command, 3, command.length-3) ) );
           break;
 
+        case "fenc":
         case "forceEncrypt":
-          System.out.println( rsa.forceEncrypt(getRange(command, 1, command.length-1)) );
+          lastEncrypted = rsa.forceEncrypt(getRange(command, 1, command.length-1));
+          System.out.println( lastEncrypted );
           break;
 
+        case "encl":
         case "encryptLast":
           if(command.length != 1) {
             printGuide();
             break;
           }
-          System.out.println( rsa.encrypt(lastDecrypted) );
+          if(lastDecrypted == "") {
+            System.out.println("There is no stored decrypted message.");
+            break;
+          }
+          lastEncrypted = rsa.encrypt(lastDecrypted);
+          System.out.println( lastEncrypted );
           break;
 
+        case "dec":
         case "decrypt":
           if(command.length != 2) {
             printGuide();
             break;
           }
-          System.out.println( rsa.decrypt(command[1]) );
+          lastDecrypted = rsa.decrypt(command[1]);
+          System.out.println( lastDecrypted );
           break;
 
+        case "dec2":
         case "decrypt2":
           if(command.length != 4) {
             printGuide();
@@ -395,24 +416,34 @@ public class MyRSA {
           System.out.println(temp.decrypt(command[3]));
           break;
 
+        case "decl":
         case "decryptLast":
           if(command.length != 1) {
             printGuide();
             break;
           }
-          System.out.println(rsa.decrypt(lastEncrypted));
+          if(lastEncrypted == "") {
+            System.out.println("There is no stored encrypted message.");
+            break;
+          }
+          lastDecrypted = rsa.decrypt(lastEncrypted);
+          System.out.println(lastDecrypted);
           break;
 
+        case "gen":
         case "generate":
           if(command.length == 2) {
             rsa.keyGen();
+            rsa.printKeys();
           } else if(command.length == 3){
             rsa.keyGen(Integer.parseInt(command[2]));
+            rsa.printKeys();
           } else {
             printGuide();
           }
           break;
 
+        case "pk":
         case "PK":
           if(command.length != 3) {
             printGuide();
@@ -421,6 +452,7 @@ public class MyRSA {
           rsa.setPK(command[1], command[2]);
           break;
 
+        case "sk":
         case "SK":
           if(command.length != 2) {
             printGuide();
@@ -429,6 +461,42 @@ public class MyRSA {
           rsa.setSK(command[1]);
           break;
 
+        case "mr":
+        case "MR":
+          if(command.length < 2) {
+            printGuide();
+            break;
+          }
+          if(command.length > 2) {
+            ArrayList<BigInteger> ar = new ArrayList<BigInteger>();
+            for(int i = 2; i < command.length; i++)
+              ar.add( new BigInteger(command[i]) );
+            temp.setBasesForMR(ar);
+          }
+          System.out.println( temp.MRTest(new BigInteger(command[1])) ? "The given number is composite." : "The given number is probably a prime." );
+          break;
+
+        case "fme":
+        case "FME":
+          if(command.length < 4) {
+            printGuide();
+            break;
+          }
+          System.out.println(temp.FME( new BigInteger(command[1]), new BigInteger(command[2]), new BigInteger(command[3]) ).toString() );
+          break;
+
+        case "eea":
+        case "EEA":
+          if(command.length < 3) {
+            printGuide();
+            break;
+          }
+          HashMap<String, BigInteger> hs = temp.EEA(new BigInteger(command[1]), new BigInteger(command[2]));
+          System.out.println("Result: " + hs.get("lnko").toString());
+          System.out.println("X: " + hs.get("x").toString());
+          break;
+
+        case "l":
         case "list":
           printCommands();
           break;
@@ -443,6 +511,10 @@ public class MyRSA {
 
     } while(loop);
   }
+
+  // -----------------------------------------------------------------------------------------
+  // -- END -- -- END -- -- END -- -- END -- -- END -- -- END -- -- END -- -- END -- -- END --
+  // -----------------------------------------------------------------------------------------
 
   static void test() {
     // test

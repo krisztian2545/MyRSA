@@ -1,13 +1,9 @@
-// run and tested on linux
-
 import java.util.Scanner;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.nio.charset.StandardCharsets;
-
-import java.io.*; // remove this
 
 public class MyRSA {
 
@@ -20,6 +16,10 @@ public class MyRSA {
   private ArrayList<BigInteger> bases = new ArrayList<BigInteger>();
 
   private static Logger l = new Logger();
+
+  public MyRSA() {
+    keyGen();
+  }
 
   private void setBasesForMR(ArrayList<BigInteger> a) {
     clearBases();
@@ -47,36 +47,6 @@ public class MyRSA {
   private void setSK(String key) {
     SK = new BigInteger(key);
   }
-
-  /*private int randomIntLessThan(BigInteger limit, boolean makeOdd) {
-    int x;
-    SecureRandom sr = new SecureRandom();
-    System.out.println("limit = " + limit.intValue() + "\n limit: " + limit.toString());
-    do {
-      x = sr.nextInt(limit.intValue());
-      if(makeOdd && (x % 2 == 0))
-        x++;
-      System.out.println("? ... " + x);
-    } while( (BigInteger.valueOf(x).compareTo(limit) == 1) || (x < 2) ); // 1 < x < limit
-
-    System.out.println("x = " + x);
-    System.out.println("limit = " + limit.intValue());
-
-    return x;
-  }*/
-
-  // private int generateE(BigInteger fiN) {
-  //   int e;
-  //   SecureRandom sr = new SecureRandom();
-  //
-  //   do {
-  //     e = sr.nextInt();
-  //     if(e % 2 == 1)
-  //       e++;
-  //   } while( (BigInteger.valueOf(e).compareTo(fiN) == -1) && (e > 1) ); // 1 < e < fi(n)
-  //
-  //   return e;
-  // }
 
   private BigInteger genRandomBigIntLessThan(BigInteger limit) {
     BigInteger x;
@@ -116,34 +86,17 @@ public class MyRSA {
     SecureRandom random = new SecureRandom();
 
     do {
-      //x = new BigInteger(bitLength, random);
       x = genRandomBigInt(bitLength);
 
       //for performance
       if(x.remainder(new BigInteger("2")).intValue() == 0)
         x = x.add(BigInteger.ONE);
 
-      //System.out.println("test rpime: " + x.toString());
       l.log("test prime: " + x.toString());
     } while( MRTest(x) );
 
     return x;
   }
-
-    //this is useless now
-  // private BigInteger genRandomMRBase(BigInteger n) {
-  //   BigInteger a = genRandomBigIntLessThan(n);
-  //   // do {
-  //   //   a = genRandomBigInt(n.bitLength());
-  //   // } while((a.compareTo(n) == -1) && (a.compareTo(BigInteger.ZERO) == 1)); // 0 < a < n
-  //
-  //   // ensuring a is (idk what this supposed to be)
-  //   // if(a.remainder(new BigInteger("2")).intValue() == 1) {
-  //   //   a.subtract(BigInteger.ONE);
-  //   // }
-  //
-  //   return a;
-  // }
 
   private boolean MRTest(BigInteger n){
 
@@ -188,13 +141,11 @@ public class MyRSA {
     BigInteger nMinusOne = n.subtract(BigInteger.ONE);
 
     loop: for(BigInteger base : a) {
-      //System.out.println("MR with base: " + base.toString());
       l.log("MR with base: " + base.toString());
       temp = FME(base, d, n);
 
       if( (temp.compareTo(BigInteger.ONE) == 0) || (temp.compareTo(nMinusOne) == 0) ) {
         continue;
-        //return false; // probable prime
       }
 
       for(int r = 1; r < S; r++) {
@@ -202,7 +153,6 @@ public class MyRSA {
 
         if(temp.compareTo(nMinusOne) == 0)
           continue loop;
-          //return false; // probable prime
       }
       l.log("composite");
       return true; // composite
@@ -275,7 +225,6 @@ public class MyRSA {
     HashMap<String, BigInteger> hm;
     BigInteger e;
     do {
-      //e = BigInteger.valueOf( randomIntLessThan(fiN, true) );
       e = genRandomBigIntLessThan(fiN, true);
       l.log("e = " + e.toString());
       hm = EEA(e, fiN);
@@ -312,18 +261,7 @@ public class MyRSA {
   }
 
   private String forceEncrypt(String m) {
-    /*BigInteger message = new BigInteger(m.getBytes(StandardCharsets.UTF_8));
-    //BigInteger out;
-
-    while(message.compareTo(PK[0]) > -1) {
-      keyGen(calcKeyBitLength(m));
-    }
-
-    System.out.println("Encrypted with keys:");
-    printKeys();
-
-    return FME(message, PK[1], PK[0]).toString();*/
-    if(SK == null)
+    if(PK == null)
       keyGen(calcKeyBitLength(m));
 
     String out = encrypt(m);
@@ -339,23 +277,20 @@ public class MyRSA {
   // DEC
   private String decrypt(String c) {
     if(c == "-1"){
-      //System.out.println("Can't decrypt the message, because there was a problem with the encryption!");
       l.log("Can't decrypt the message, because there was a problem with the encryption!");
       return "Can't decrypt the message, because there was a problem with the encryption!";
     }
+
     return new String( FME(new BigInteger(c), SK, PK[0]).toByteArray(), StandardCharsets.UTF_8 );
-    //return FME(c, SK, PK[0]);
   }
 
   // ----------------------------------------------------------------------------------------
   // -- MAIN --  -- MAIN -- -- MAIN -- -- MAIN -- -- MAIN -- -- MAIN -- -- MAIN -- -- MAIN --
   // ----------------------------------------------------------------------------------------
   public static void main(String[] args) {
-    //test();
 
     MyRSA temp = new MyRSA();
     MyRSA rsa = new MyRSA();
-    rsa.keyGen();
 
     String lastEncrypted = "";
     String lastDecrypted = "";
@@ -446,6 +381,15 @@ public class MyRSA {
           System.out.println(lastDecrypted);
           break;
 
+
+        case "keys":
+          if(command.length != 1) {
+            printGuide();
+            break;
+          }
+          rsa.printKeys();
+          break;
+
         case "gen":
         case "generate":
           if(command.length == 2) {
@@ -530,6 +474,7 @@ public class MyRSA {
           printCommands();
           break;
 
+        case "ex":
         case "exit":
           loop = false;
           break;
@@ -545,83 +490,27 @@ public class MyRSA {
   // -- END -- -- END -- -- END -- -- END -- -- END -- -- END -- -- END -- -- END -- -- END --
   // -----------------------------------------------------------------------------------------
 
-  static void test() {
-    // test
-    MyRSA asd = new MyRSA();
-    //asd.keyGen(80);
-    BigInteger a = BigInteger.valueOf(2).pow(35);
-    BigInteger b = new BigInteger("561");
-
-    //System.out.println(asd.genRandomBigInt(2));
-
-    // generate key
-
-    // user input
-    /*
-    BigInteger c = a;
-    c = c.add(BigInteger.ONE);
-    System.out.println("a + b = " + a.add(b).toString());
-    System.out.println("a = " + a.toString());
-    System.out.println("c = " + c.toString());
-
-
-    System.out.println("c = " + c.toString(2));
-    //String text=System.console().readLine();
-    System.out.println( "mod: " + asd.FME( BigInteger.valueOf(7), BigInteger.valueOf(256), BigInteger.valueOf(13) ) );
-
-    ArrayList<Integer> al = new ArrayList<Integer>();
-    al.add(2);
-    //al.add(2);
-    //al.add(2);
-    asd.setBasesForMR(al);
-    System.out.println(asd.MRTest(new BigInteger("5")));
-    asd.clearBases();
-    System.out.println("keygen----------------");
-    asd.keyGen();
-    System.out.println("keygen----------------");
-    asd.printKeys();
-
-    HashMap<String, BigInteger> hm = asd.EEA(BigInteger.valueOf(920), BigInteger.valueOf(1240));
-    System.out.println("lnko = " + hm.get("lnko"));
-    System.out.println("x = " + hm.get("x"));
-
-    String mess = "fuck you da vinci";
-    BigInteger qwe = new BigInteger(mess.getBytes());
-    System.out.println( qwe.toString() );
-    System.out.println( new String(qwe.toByteArray()) ); */
-
-    System.out.println("-------------------------------------------------------------------");
-    Scanner sc = new Scanner(System.in);
-    String message = sc.nextLine();
-    //asd.keyGen( asd.calcKeyBitLength(message) );
-    asd.printKeys();
-    String cc = asd.forceEncrypt(message);
-    System.out.println("message as BigInteger: " + (new BigInteger(message.getBytes(StandardCharsets.UTF_8))).toString() );
-    System.out.println("cc: " + cc);
-    System.out.println( asd.decrypt(cc) );
-
-    // encryption / decryption
-  }
-
-  //---------------------------------------------- User Interface -------------------------------
+  //---------------------------------------------- User Interface ----------------------------
   private static Scanner scanner = new Scanner(System.in);
 
   private static void printCommands() {
     String s = " ----------------------------------------\n";
-    s += "encrypt <message> - encrypts the given message\n";
-    s += "encrypt2 <modulus> <exponent> <message> - encrypts the given message with the given key (the key will be forgotten)\n";
-    s += "forceEncrypt - if the message is bigger than the key, than itt will generate new keys and use them to encrypt the message\n";
-    s += "encryptLast - encrypts the last decrypted message\n";
-    s += "decrypt <encrypted message> - decrypts the message\n";
-    s += "decrypt2 <private key> <modulus> <encrypted message> - decrypts the message with the given key (the key will be forgotten)\n";
-    s += "decryptLast - decrypts the last encrypted message\n";
-    s += "generate keys <bitlength> - generate new keys, the bitlength is optional to set an upper limit when generating primes\n";
-    s += "PK <modulus> <exponent> - (for advanced users) set public key, should be followed by setting the private key\n";
-    s += "SK <private key> - (for advanced users) set private key, first you must to set the public key!!!\n";
-    s += "MR <number> <base> <base> .. - tests the given number with the Miller Rabin test, optionally you can give the bases to work with\n";
-    s += "FME <base> <exponent> <modulus> - Fast Modular Exponentiation\n";
-    s += "EEA <a> <b> - Extended Euclidean Algorithm\n";
-    s += "exit - exit the program\n";
+    s += " # encrypt <message> - encrypts the given message\n";
+    s += " # encrypt2 <modulus> <exponent> <message> - encrypts the given message with the given key (the key will be forgotten)\n";
+    s += " # forceEncrypt - if the message is bigger than the key, than itt will generate new keys and use them to encrypt the message\n";
+    s += " # encryptLast - encrypts the last decrypted message\n";
+    s += " # decrypt <encrypted message> - decrypts the message\n";
+    s += " # decrypt2 <private key> <modulus> <encrypted message> - decrypts the message with the given key (the key will be forgotten)\n";
+    s += " # decryptLast - decrypts the last encrypted message\n";
+    s += " # keys - prints the keys\n";
+    s += " # generate keys <bitlength> - generate new keys, the bitlength is optional to set an upper limit when generating primes\n";
+    s += " # PK <modulus> <exponent> - (for advanced users) set public key, should be followed by setting the private key\n";
+    s += " # SK <private key> - (for advanced users) set private key, first you must to set the public key!!!\n";
+    s += " # MR <number> <base> <base> .. - tests the given number with the Miller Rabin test, optionally you can give the bases to work with\n";
+    s += " # FME <base> <exponent> <modulus> - Fast Modular Exponentiation\n";
+    s += " # EEA <a> <b> - Extended Euclidean Algorithm\n";
+    s += " # logger <value> - turn the logger on or off, the value to enable can be: \'on\' or \'1\' ; to disable: \'off\' or \'0\'\n";
+    s += " # exit - exit the program\n";
     s += " -----------------------------------------\n";
     System.out.println(s);
   }
@@ -638,11 +527,9 @@ public class MyRSA {
     return out;
   }
 
-  // -------------------------------------- just logger class
-
-
 }
 
+// -------------------------------------- just a logger class
 class Logger {
   private static boolean enabled;
 

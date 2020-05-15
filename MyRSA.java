@@ -252,6 +252,7 @@ public class MyRSA {
   // ENC
   private String encrypt(String m) {
     BigInteger message = new BigInteger(m.getBytes(StandardCharsets.UTF_8));
+
     if(message.compareTo(PK[0]) > -1) {
       System.out.println("The key must be greater than the message!!!");
       return "-1";
@@ -267,6 +268,7 @@ public class MyRSA {
     String out = encrypt(m);
     while(out == "-1") {
       keyGen(calcKeyBitLength(m));
+      out = encrypt(m);
     }
     System.out.println("Encrypted with keys:");
     printKeys();
@@ -313,7 +315,7 @@ public class MyRSA {
             break;
           }
           lastEncrypted = rsa.encrypt( getRange(command, 1, command.length-1) );
-          System.out.println( lastEncrypted );
+          System.out.println( "Result: \n" + lastEncrypted );
           break;
 
         case "enc2":
@@ -323,13 +325,13 @@ public class MyRSA {
             break;
           }
           temp.setPK(command[1], command[2]);
-          System.out.println( temp.encrypt( getRange(command, 3, command.length-3) ) );
+          System.out.println( "Result: \n" + temp.encrypt( getRange(command, 3, command.length-3) ) );
           break;
 
         case "fenc":
         case "forceEncrypt":
           lastEncrypted = rsa.forceEncrypt(getRange(command, 1, command.length-1));
-          System.out.println( lastEncrypted );
+          System.out.println( "Result: \n" + lastEncrypted );
           break;
 
         case "encl":
@@ -343,7 +345,7 @@ public class MyRSA {
             break;
           }
           lastEncrypted = rsa.encrypt(lastDecrypted);
-          System.out.println( lastEncrypted );
+          System.out.println( "Result: \n" + lastEncrypted );
           break;
 
         case "dec":
@@ -353,7 +355,7 @@ public class MyRSA {
             break;
           }
           lastDecrypted = rsa.decrypt(command[1]);
-          System.out.println( lastDecrypted );
+          System.out.println( "Result: \n" + lastDecrypted );
           break;
 
         case "dec2":
@@ -364,7 +366,7 @@ public class MyRSA {
           }
           temp.setPK(command[2], "3");
           temp.setSK(command[1]);
-          System.out.println(temp.decrypt(command[3]));
+          System.out.println("Result: \n" + temp.decrypt(command[3]));
           break;
 
         case "decl":
@@ -378,7 +380,7 @@ public class MyRSA {
             break;
           }
           lastDecrypted = rsa.decrypt(lastEncrypted);
-          System.out.println(lastDecrypted);
+          System.out.println("Result: \n" + lastDecrypted);
           break;
 
 
@@ -438,16 +440,16 @@ public class MyRSA {
 
         case "fme":
         case "FME":
-          if(command.length < 4) {
+          if(command.length != 4) {
             printGuide();
             break;
           }
-          System.out.println(temp.FME( new BigInteger(command[1]), new BigInteger(command[2]), new BigInteger(command[3]) ).toString() );
+          System.out.println("Result: \n" + temp.FME( new BigInteger(command[1]), new BigInteger(command[2]), new BigInteger(command[3]) ).toString() );
           break;
 
         case "eea":
         case "EEA":
-          if(command.length < 3) {
+          if(command.length != 3) {
             printGuide();
             break;
           }
@@ -457,14 +459,15 @@ public class MyRSA {
           break;
 
         case "logger":
-          if(command.length != 2) {
+          if(command.length == 2) {
+            if((command[1].equals("on")) || (command[1].equals("1"))) {
+              l.enable();
+            } else if((command[1].equals("off")) || (command[1].equals("0"))) {
+              l.disable();
+            }
+          } else if(command.length > 2) {
             printGuide();
             break;
-          }
-          if((command[1].equals("on")) || (command[1].equals("1"))) {
-            l.enable();
-          } else if((command[1].equals("off")) || (command[1].equals("0"))) {
-            l.disable();
           }
           System.out.println(l.getEnabled() ? "enabled" : "disabled");
           break;

@@ -12,13 +12,14 @@ import java.io.*; // remove this
 public class MyRSA {
 
   private final int MIN_NUM_OF_BASES = 3;
-  private final int BITLENGTH_MULTIPLIER = 1.5f;
+  private final int BITLENGTH_MULTIPLIER = 5;
 
   private BigInteger[] PK = new BigInteger[2];
   private BigInteger SK;
   private ArrayList<BigInteger> bases = new ArrayList<BigInteger>();
 
   private void setBasesForMR(ArrayList<BigInteger> a) {
+    clearBases();
     bases = a;
   }
 
@@ -27,15 +28,15 @@ public class MyRSA {
   }
 
   private int calcKeyBitLength(String m) {
-    return (new BigInteger(m.getBytes(StandardCharsets.UTF_8))).bitLength();
+    return (new BigInteger(m.getBytes(StandardCharsets.UTF_8))).bitLength() + BITLENGTH_MULTIPLIER;
   }
 
   private void printKeys() {
     System.out.println("PK = (" + PK[0] + ", " + PK[1] + ")");
-    System.out.println("SK = (" + SK.toString() + ")");
+    System.out.println("SK = (" + SK + ")");
   }
 
-  private int randomIntLessThan(BigInteger limit, boolean makeOdd) {
+  /*private int randomIntLessThan(BigInteger limit, boolean makeOdd) {
     int x;
     SecureRandom sr = new SecureRandom();
     System.out.println("limit = " + limit.intValue() + "\n limit: " + limit.toString());
@@ -50,7 +51,7 @@ public class MyRSA {
     System.out.println("limit = " + limit.intValue());
 
     return x;
-  }
+  }*/
 
   // private int generateE(BigInteger fiN) {
   //   int e;
@@ -271,20 +272,20 @@ public class MyRSA {
   }
 
   // ENC
-  private BigInteger encrypt(String m) {
+  private String encrypt(String m) {
     BigInteger message = new BigInteger(m.getBytes(StandardCharsets.UTF_8));
     if(message.compareTo(PK[0]) > -1) {
       System.out.println("The key must be greater than the message!!!");
-      return BigInteger.valueOf(-1);
+      return "-1";
     }
 
-    return FME(message, PK[1], PK[0]);
+    return FME(message, PK[1], PK[0]).toString();
     //return FME(m, PK[1], PK[0]);
   }
 
-  private BigInteger forceEncrypt(String m) {
-    BigInteger message = new BigInteger(m.getBytes(StandardCharsets.UTF_8));
-    BigInteger out;
+  private String forceEncrypt(String m) {
+    /*BigInteger message = new BigInteger(m.getBytes(StandardCharsets.UTF_8));
+    //BigInteger out;
 
     while(message.compareTo(PK[0]) > -1) {
       keyGen(calcKeyBitLength(m));
@@ -293,19 +294,45 @@ public class MyRSA {
     System.out.println("Encrypted with keys:");
     printKeys();
 
-    return FME(message, PK[1], PK[0]);
+    return FME(message, PK[1], PK[0]).toString();*/
+    if(SK == null)
+      keyGen(calcKeyBitLength(m));
+
+    String out = encrypt(m);
+    while(out == "-1") {
+      keyGen(calcKeyBitLength(m));
+    }
+    System.out.println("Encrypted with keys:");
+    printKeys();
+
+    return out;
   }
 
   // DEC
-  private String decrypt(BigInteger c) {
-    return new String( FME(c, SK, PK[0]).toByteArray(), StandardCharsets.UTF_8 );
+  private String decrypt(String c) {
+    if(c == "-1"){
+      System.out.println("Can't decrypt the message, because there was a problem with the encryption!");
+      return "Can't decrypt the message, because there was a problem with the encryption!";
+    }
+    return new String( FME(new BigInteger(c), SK, PK[0]).toByteArray(), StandardCharsets.UTF_8 );
     //return FME(c, SK, PK[0]);
   }
 
   public static void main(String[] args) {
+    test();
+    // welcome
+    System.out.println("");
+
+    boolean loop = true;
+    do {
+
+    } while(loop);
+  }
+
+  static void test() {
     // test
     MyRSA asd = new MyRSA();
-    asd.keyGen(80);
+    //asd.keyGen(80);
     BigInteger a = BigInteger.valueOf(2).pow(35);
     BigInteger b = new BigInteger("561");
 
@@ -350,63 +377,21 @@ public class MyRSA {
     System.out.println("-------------------------------------------------------------------");
     Scanner sc = new Scanner(System.in);
     String message = sc.nextLine();
-    asd.keyGen( (new BigInteger(message.getBytes(StandardCharsets.UTF_8))).multiply(BigInteger.valueOf(10)).bitLength() );
+    //asd.keyGen( asd.calcKeyBitLength(message) );
     asd.printKeys();
-    BigInteger cc = asd.encrypt(message);
-    System.out.println( (new BigInteger(message.getBytes(StandardCharsets.UTF_8))).toString() );
-    System.out.println(cc.toString());
+    String cc = asd.forceEncrypt(message);
+    System.out.println("message as BigInteger: " + (new BigInteger(message.getBytes(StandardCharsets.UTF_8))).toString() );
+    System.out.println("cc: " + cc);
     System.out.println( asd.decrypt(cc) );
 
     // encryption / decryption
+  }
+
+  //---------------------------------------------- User Interface -------------------------------
+  private static Scanner scanner = new Scanner(System.in);
+
+  private static printGuide() {
 
   }
-/*
-  public final static void clearConsole()
-  {
-    // System.out.print("\033[H\033[2J");
-    // System.out.flush();
 
-    // try
-    // {
-    //     final String os = System.getProperty("os.name");
-    //
-    //     if (os.contains("Windows"))
-    //     {
-    //         Runtime.getRuntime().exec("cls");
-    //     }
-    //     else
-    //     {
-    //         Runtime.getRuntime().exec("pwd");
-    //         String[] s = new String[]{"ls"};
-    //         Runtime.getRuntime().exec(s);
-    //     }
-    // }
-    // catch (final Exception e)
-    // {
-    //     //  Handle any exceptions.
-    // }
-    Process process = null;
-    try
-            {
-            process = Runtime.getRuntime().exec("clear"); // for Linux
-            //Process process = Runtime.getRuntime().exec("cmd /c dir"); //for Windows
-
-            process.waitFor();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-               while ((line=reader.readLine())!=null)
-               {
-                System.out.println(line);
-                }
-             }
-                catch(Exception e)
-             {
-                 System.out.println(e);
-             }
-             finally
-             {
-               process.destroy();
-             }
-  }
-*/
 }
